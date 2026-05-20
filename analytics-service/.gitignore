@@ -31,21 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-patient-service/mvnw
-patient-service/mvnw.cmd
-
-# Ignorare Wrappere Maven in toate sub-folderele
-**/.mvn/
-**/mvnw
-**/mvnw.cmd
-**/.gitattributes
-
-# Ignorare Poze
-*.png
-*.jpg
-*.jpeg
-
-# Ignorare artefacte AWS CDK
-infrastructure/cdk.out/
-
