@@ -32,8 +32,8 @@ build/
 ### VS Code ###
 .vscode/
 
-patient-service/mvnw
-patient-service/mvnw.cmd
+customer-service/mvnw
+customer-service/mvnw.cmd
 
 # Ignorare Wrappere Maven in toate sub-folderele
 **/.mvn/

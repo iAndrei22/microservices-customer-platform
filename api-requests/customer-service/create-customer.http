@@ -1,0 +1,14 @@
+### Creates a new customer entity
+POST http://localhost:4004/api/customers
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Andrei Andreescu Kafka",
+  "email": "kafka@example.com",
+  "address": "123 Bucuresti",
+  "dateOfBirth": "2000-03-02",
+  "registeredDate": "2026-01-02"
+}
+
+###

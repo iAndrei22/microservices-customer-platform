@@ -1,0 +1,4 @@
+### GET request to get all customers
+GET http://localhost:4004/api/customers
+Authorization: Bearer {{token}}
+###

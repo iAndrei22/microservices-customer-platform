@@ -1,0 +1,12 @@
+### Updates an existing customer entity
+PUT http://localhost:4000/customers/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+{
+  "name": "Andrei Andreescu",
+  "email": "test2@example.com",
+  "address": "123 Bucuresti",
+  "dateOfBirth": "2000-03-02"
+}
+
+###

@@ -12,22 +12,22 @@ spring:
           filters:
             - StripPrefix=1
 
-        # Route for /api/patients/** to patient-service
-        - id: patient-service-route
-          uri: http://patient-service:4000
+        # Route for /api/customers/** to customer-service
+        - id: customer-service-route
+          uri: http://customer-service:4000
           predicates:
-            - Path=/api/patients/**
+            - Path=/api/customers/**
           filters:
             - StripPrefix=1
             - JwtValidation
 
-        # Route for /api/docs/patients to patient-service /v3/api-docs
-        - id: api-docs-patient-route
-          uri: http://patient-service:4000
+        # Route for /api/docs/customers to customer-service /v3/api-docs
+        - id: api-docs-customer-route
+          uri: http://customer-service:4000
           predicates:
-            - Path=/api-docs/patients
+            - Path=/api-docs/customers
           filters:
-            - RewritePath=/api-docs/patients,/v3/api-docs
+            - RewritePath=/api-docs/customers,/v3/api-docs
 
         - id: api-docs-auth-route
           uri: http://auth-service:4005
