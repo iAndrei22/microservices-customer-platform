@@ -4,6 +4,16 @@ server:
 spring:
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:3000" # UI
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            allowedHeaders: "*"
       routes:
         - id: auth-service-route
           uri: http://auth-service:4005
