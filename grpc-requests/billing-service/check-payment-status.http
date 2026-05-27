@@ -1,0 +1,18 @@
+### 1. Generarea link-ului de plata (Ce va face butonul din React)
+GRPC localhost:9001/BillingService/CreateCheckoutSession
+
+{
+  "customerId": "user_react_2026",
+  "serviceType": "Abonament Premium",
+  "amount": 15000
+}
+
+### 2. Verificarea si trimiterea pe Kafka (Ce va face pagina de /success din React)
+GRPC localhost:9001/BillingService/CheckPaymentStatus
+
+{
+  "customerId": "user_react_2026",
+  "checkoutSessionId": "REPLACE THIS",
+  "serviceType": "Abonament Premium",
+  "amount": 15000
+}
