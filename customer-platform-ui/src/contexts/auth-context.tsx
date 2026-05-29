@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -27,52 +28,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const lastRedirect = useRef<string | null>(null);
 
+  // Load token from localStorage once on mount
   useEffect(() => {
-    setToken(localStorage.getItem(TOKEN_KEY));
-    setIsLoading(false);
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
+      setToken(saved);
+    } catch (err) {
+      console.error("auth-context error reading localStorage", err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  // Redirect handling — wait until we finished initial loading
   useEffect(() => {
     if (isLoading) return;
 
-    if (pathname.startsWith("/dashboard") && !token) {
-      if (pathname !== "/login") {
-        router.replace("/login");
+    try {
+      const p = pathname ?? "";
+
+      if (p.startsWith("/dashboard") && !token) {
+        // unauthenticated user trying to access dashboard -> send to login
+        if (lastRedirect.current !== "/login") {
+          lastRedirect.current = "/login";
+          router.replace("/login");
+        }
+        return;
       }
-    } else if (pathname === "/login" && token) {
-      router.replace("/dashboard");
+
+      if (p === "/login" && token) {
+        // authenticated user on login -> send to dashboard
+        if (lastRedirect.current !== "/dashboard") {
+          lastRedirect.current = "/dashboard";
+          router.replace("/dashboard");
+        }
+        return;
+      }
+    } catch (err) {
+      // safe fallback — log to console so we can see unexpected values
+      console.error("auth-context error while checking redirects", err, {
+        pathname,
+        token,
+        isLoading,
+      });
     }
   }, [token, pathname, isLoading, router]);
 
   const login = useCallback(
     (newToken: string) => {
-      localStorage.setItem(TOKEN_KEY, newToken);
+      try {
+        localStorage.setItem(TOKEN_KEY, newToken);
+      } catch (err) {
+        console.error("auth-context login localStorage error", err);
+      }
       setToken(newToken);
-      router.push("/dashboard");
+      router.replace("/dashboard");
     },
     [router]
   );
 
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch (err) {
+      console.error("auth-context logout localStorage error", err);
+    }
     setToken(null);
-    router.push("/login");
+    router.replace("/login");
   }, [router]);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        token,
-        isAuthenticated: !!token,
-        isLoading,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextValue = {
+    token,
+    isAuthenticated: !!token,
+    isLoading,
+    login,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
