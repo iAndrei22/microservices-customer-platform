@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @GrpcService
 @Service
@@ -35,6 +37,9 @@ public class BillingGrpcService extends BillingServiceGrpc.BillingServiceImplBas
 
     @Value("${stripe.secret-key}")
     private String stripeSecretKey;
+
+    @Value("${frontend.base-url:http://localhost:3000}")
+    private String frontendBaseUrl;
 
     public BillingGrpcService(BillingAccountRepository billingAccountRepository,
                               PaymentKafkaProducer paymentKafkaProducer) {
@@ -124,10 +129,20 @@ public class BillingGrpcService extends BillingServiceGrpc.BillingServiceImplBas
                     .setQuantity(1L)
                     .build();
 
+            String encodedCustomerId = URLEncoder.encode(customerId, StandardCharsets.UTF_8);
+            String encodedServiceType = URLEncoder.encode(serviceType, StandardCharsets.UTF_8);
+            String successUrl = String.format(
+                    "%s/success?session_id={CHECKOUT_SESSION_ID}&customerId=%s&serviceType=%s&amount=%d",
+                    frontendBaseUrl,
+                    encodedCustomerId,
+                    encodedServiceType,
+                    amount
+            );
+
             SessionCreateParams params = SessionCreateParams.builder()
                     .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                     .setMode(SessionCreateParams.Mode.PAYMENT)
-                    .setSuccessUrl("http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}")
+                    .setSuccessUrl(successUrl)
                     .setCancelUrl("http://localhost:3000/cancel")
                     .addLineItem(lineItem)
                     .build();
@@ -152,6 +167,48 @@ public class BillingGrpcService extends BillingServiceGrpc.BillingServiceImplBas
         }
     }
 
+        @Override
+        public void simulatePosPayment(billing.CheckoutRequest request,
+                                                                   StreamObserver<CheckPaymentStatusResponse> responseObserver) {
+
+                log.info("simulatePosPayment request received for customerId={}, serviceType={}, amount={}",
+                                request.getCustomerId(), request.getServiceType(), request.getAmount());
+
+                String customerId = request.getCustomerId();
+                String serviceType = request.getServiceType();
+                long amount = request.getAmount();
+
+                try {
+                        // Create a synthetic session id for demo purposes
+                        String sessionId = "sim_pos_" + System.currentTimeMillis();
+
+                        // Publish the payment event immediately to Kafka
+                        long currentTimestamp = System.currentTimeMillis();
+                        paymentKafkaProducer.publishPaymentEvent(
+                                        customerId,
+                                        amount,
+                                        serviceType,
+                                        sessionId,
+                                        currentTimestamp
+                        );
+
+                        CheckPaymentStatusResponse response = CheckPaymentStatusResponse.newBuilder()
+                                        .setPaid(true)
+                                        .setStatus("paid")
+                                        .setCheckoutSessionId(sessionId)
+                                        .setAmount(amount)
+                                        .setServiceType(serviceType)
+                                        .build();
+
+                        responseObserver.onNext(response);
+                        responseObserver.onCompleted();
+
+                } catch (Exception e) {
+                        log.error("Error while simulating POS payment for customerId={}: {}", customerId, e.getMessage(), e);
+                        responseObserver.onError(Status.INTERNAL.withDescription("Internal error").withCause(e).asRuntimeException());
+                }
+        }
+
     @Override
     public void checkPaymentStatus(CheckPaymentStatusRequest request,
                                    StreamObserver<CheckPaymentStatusResponse> responseObserver) {
@@ -167,7 +224,7 @@ public class BillingGrpcService extends BillingServiceGrpc.BillingServiceImplBas
         try {
             // Retrieve session from Stripe to check payment status
             Session session = Session.retrieve(checkoutSessionId);
-            
+
             boolean isPaid = "paid".equals(session.getPaymentStatus());
             String status = session.getPaymentStatus();
 

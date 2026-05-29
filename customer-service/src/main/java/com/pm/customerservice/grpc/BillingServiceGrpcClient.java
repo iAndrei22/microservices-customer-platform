@@ -3,6 +3,10 @@ package com.pm.customerservice.grpc;
 import billing.BillingRequest;
 import billing.BillingResponse;
 import billing.BillingServiceGrpc;
+import billing.CheckoutRequest;
+import billing.CheckoutResponse;
+import billing.CheckPaymentStatusRequest;
+import billing.CheckPaymentStatusResponse;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
@@ -40,4 +44,41 @@ public class BillingServiceGrpcClient {
         log.info("Received response from billing service via GRPC: {}", response);
         return response;
     }
+
+    public CheckoutResponse createCheckoutSession(String customerId, String serviceType, long amount) {
+        CheckoutRequest request = CheckoutRequest.newBuilder()
+                .setCustomerId(customerId)
+                .setServiceType(serviceType)
+                .setAmount(amount)
+                .build();
+
+        CheckoutResponse response = blockingStub.createCheckoutSession(request);
+        log.info("Received checkout response from billing service via GRPC: {}", response);
+        return response;
+    }
+
+    public CheckPaymentStatusResponse checkPaymentStatus(String customerId, String checkoutSessionId, String serviceType, long amount) {
+        CheckPaymentStatusRequest request = CheckPaymentStatusRequest.newBuilder()
+                .setCustomerId(customerId)
+                .setCheckoutSessionId(checkoutSessionId)
+                .setServiceType(serviceType)
+                .setAmount(amount)
+                .build();
+
+        CheckPaymentStatusResponse response = blockingStub.checkPaymentStatus(request);
+        log.info("Received payment status response from billing service via GRPC: {}", response);
+        return response;
+    }
+
+        public CheckPaymentStatusResponse simulatePosPayment(String customerId, String serviceType, long amount) {
+                CheckoutRequest request = CheckoutRequest.newBuilder()
+                                .setCustomerId(customerId)
+                                .setServiceType(serviceType)
+                                .setAmount(amount)
+                                .build();
+
+                CheckPaymentStatusResponse response = blockingStub.simulatePosPayment(request);
+                log.info("Received simulate POS response from billing service via GRPC: {}", response);
+                return response;
+        }
 }

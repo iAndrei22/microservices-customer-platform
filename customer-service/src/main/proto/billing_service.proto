@@ -5,6 +5,10 @@ option java_package = "billing";
 
 service BillingService{
   rpc CreateBillingAccount(BillingRequest) returns (BillingResponse);
+  rpc CheckPaymentStatus(CheckPaymentStatusRequest) returns (CheckPaymentStatusResponse);
+  rpc CreateCheckoutSession(CheckoutRequest) returns (CheckoutResponse);
+  // POS simulator: immediately mark a payment as successful for demo purposes
+  rpc SimulatePosPayment(CheckoutRequest) returns (CheckPaymentStatusResponse);
 }
 
 message BillingRequest{
@@ -16,4 +20,30 @@ message BillingRequest{
 message BillingResponse{
   string accountId = 1;
   string status = 2;
+}
+
+message CheckPaymentStatusRequest{
+  string customerId = 1;
+  string checkoutSessionId = 2;
+  string serviceType = 3;
+  int64 amount = 4;
+}
+
+message CheckPaymentStatusResponse{
+  bool paid = 1;
+  string status = 2;
+  string checkoutSessionId = 3;
+  int64 amount = 4;
+  string serviceType = 5;
+}
+
+message CheckoutRequest {
+  string customerId = 1;
+  string serviceType = 2;
+  int64 amount = 3;
+}
+
+message CheckoutResponse {
+  string checkoutUrl = 1;
+  string sessionId = 2;
 }

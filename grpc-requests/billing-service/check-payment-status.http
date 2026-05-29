@@ -1,18 +1,20 @@
-### 1. Generarea link-ului de plata (Ce va face butonul din React)
-GRPC localhost:9001/BillingService/CreateCheckoutSession
+### 1. Generarea link-ului de plată prin Customer Service (REST)
+POST http://localhost:4004/api/customers/123e4567-e89b-12d3-a456-426614174003/checkout
+Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "customerId": "user_react_2026",
   "serviceType": "Abonament Premium",
   "amount": 15000
 }
 
-### 2. Verificarea si trimiterea pe Kafka (Ce va face pagina de /success din React)
-GRPC localhost:9001/BillingService/CheckPaymentStatus
+### 2. Verificarea plătii după redirect (REST)
+POST http://localhost:4004/api/customers/123e4567-e89b-12d3-a456-426614174002/payment/success
+Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "customerId": "user_react_2026",
-  "checkoutSessionId": "REPLACE THIS",
+  "checkoutSessionId": "cs_test_a1UqP2fW8rV5xTvx8rZBRmi6w0yjFC6ozXVlyte9M4jyfH2dtxsuVC8cEE",
   "serviceType": "Abonament Premium",
   "amount": 15000
 }
