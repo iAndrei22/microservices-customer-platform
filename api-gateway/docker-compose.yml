@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  api-gateway:
+    container_name: api-gateway
+    image: api-gateway:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:4005
+    ports:
+      - "4004:4004"
+    networks:
+      - internal
+
+networks:
+  internal:
+    external: true
+

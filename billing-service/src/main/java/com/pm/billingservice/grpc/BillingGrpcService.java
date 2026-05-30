@@ -51,8 +51,7 @@ public class BillingGrpcService extends BillingServiceGrpc.BillingServiceImplBas
     public void init() {
         // Initialize Stripe API key from configuration
         Stripe.apiKey = stripeSecretKey;
-        log.info("Stripe API key initialized (first 8 chars): {}",
-                stripeSecretKey == null ? "<null>" : stripeSecretKey.substring(0, Math.min(8, stripeSecretKey.length())) + "...");
+        log.info("Stripe API key configured: {}", stripeSecretKey != null && !stripeSecretKey.isBlank());
     }
 
     @Override

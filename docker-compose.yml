@@ -1,0 +1,221 @@
+services:
+  customer-service-db:
+    container_name: customer-service-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db
+    ports:
+      - "5000:5432"
+    volumes:
+      - "D:/db_volumes/customer-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d db"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - internal
+
+  auth-service-db:
+    container_name: auth-service-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db
+    ports:
+      - "5001:5432"
+    volumes:
+      - "D:/db_volumes/auth-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d db"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - internal
+
+  billing-service-db:
+    container_name: billing-service-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db
+    ports:
+      - "5002:5432"
+    volumes:
+      - "D:/db_volumes/billing-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d db"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - internal
+
+  analytics-service-db:
+    container_name: analytics-service-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db
+    ports:
+      - "5003:5432"
+    volumes:
+      - "D:/db_volumes/anlytics-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d db"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - internal
+
+  kafka:
+    container_name: kafka
+    image: bitnamilegacy/kafka:latest
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_CFG_NODE_ID: "0"
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+    networks:
+      - internal
+
+  auth-service:
+    container_name: auth-service
+    image: auth-service:local
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-service-db:5432/db
+      SPRING_DATASOURCE_USERNAME: admin_user
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_SQL_INIT_MODE: always
+      JWT_SECRET: yRM6mx7uUWHL5BL0ag8joMDjeqqUOqCFLe26JCB0buW
+    ports:
+      - "4005:4005"
+    depends_on:
+      auth-service-db:
+        condition: service_healthy
+    networks:
+      - internal
+
+  billing-service:
+    container_name: billing-service
+    image: billing-service:local
+    build:
+      context: ./billing-service
+      dockerfile: Dockerfile
+    environment:
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://billing-service-db:5432/db
+      SPRING_DATASOURCE_USERNAME: admin_user
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_SQL_INIT_MODE: always
+    ports:
+      - "4001:4001"
+      - "9001:9001"
+    depends_on:
+      billing-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - internal
+
+  customer-service:
+    container_name: customer-service
+    image: customer-service:local
+    build:
+      context: ./customer-service
+      dockerfile: Dockerfile
+    environment:
+      BILLING_SERVICE_ADDRESS: billing-service
+      BILLING_SERVICE_GRPC_PORT: "9001"
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://customer-service-db:5432/db
+      SPRING_DATASOURCE_USERNAME: admin_user
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_SQL_INIT_MODE: always
+    ports:
+      - "4000:4000"
+    depends_on:
+      customer-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      billing-service:
+        condition: service_started
+    networks:
+      - internal
+
+  analytics-service:
+    container_name: analytics-service
+    image: analytics-service:local
+    build:
+      context: ./analytics-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://analytics-service-db:5432/db
+      SPRING_DATASOURCE_USERNAME: admin_user
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_SQL_INIT_MODE: always
+    ports:
+      - "4002:4002"
+    depends_on:
+      analytics-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - internal
+
+  api-gateway:
+    container_name: api-gateway
+    image: api-gateway:local
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:4005
+    ports:
+      - "4004:4004"
+    depends_on:
+      auth-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+      billing-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+

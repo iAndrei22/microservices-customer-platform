@@ -49,3 +49,8 @@ customer-service/mvnw.cmd
 # Ignorare artefacte AWS CDK
 infrastructure/cdk.out/
 
+# Local secrets
+.env
+.env.*
+!.env.example
+

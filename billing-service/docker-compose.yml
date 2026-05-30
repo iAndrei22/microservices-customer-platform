@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  billing-service:
+    container_name: billing-service
+    image: billing-service:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4001:4001"
+      - "9001:9001"
+    environment:
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://billing-service-db:5432/db
+      SPRING_DATASOURCE_USERNAME: admin_user
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_SQL_INIT_MODE: always
+    networks:
+      - internal
+
+networks:
+  internal:
+    external: true
+

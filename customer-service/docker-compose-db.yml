@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  customer-service-db:
+    container_name: customer-service-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db
+    ports:
+      - "5000:5432"
+    volumes:
+      - "D:/db_volumes/customer-service-db:/var/lib/postgresql"
+    networks:
+      - internal
+
+networks:
+  internal:
+    external: true
+
